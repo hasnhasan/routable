@@ -8,13 +8,29 @@ use Illuminate\Support\Facades\Route;
 trait Routable
 {
 
-    protected $with = ['route'];
+    /**
+     * @var array
+     */
+    private static $routeData = [];
 
     protected static function bootRoutable()
     {
+
+        self::saving(function ($item) {
+            if (isset($item->_route)) {
+                self::$routeData = $item->_route;
+                unset($item->route);
+            }
+
+            return $item;
+        });
+
         self::saved(function ($item) {
             self::routeSave($item);
+            self::$routeData = [];
             self::clearBootedModels();
+
+            return $item;
         });
 
         self::deleting(function ($item) {
@@ -23,12 +39,21 @@ trait Routable
         });
     }
 
+    /**
+     * @return mixed
+     */
     public function route()
     {
         return $this->hasOne(DynamicRoute::class, 'parameter', 'id')
-            ->where('uses', $this->routeNameToUses());
+            ->where('uses', self::routeNameToUses());
     }
 
+    /**
+     * @param $query
+     * @param  string  $slug
+     *
+     * @return mixed
+     */
     public function scopeWhereSlug($query, $slug = '')
     {
         return $query->whereHas("route", function ($q) use ($slug) {
@@ -36,41 +61,48 @@ trait Routable
         });
     }
 
+    /**
+     * Route Save
+     *
+     * @param $item
+     *
+     * @return bool
+     */
     public static function routeSave($item)
     {
         $colum = isset($item->slugColumn) ? $item->slugColumn : 'title';
-        $slug  = self::createSlug(str_slug($item->$colum), $item);
+        $slug  = $item->$colum;
+        if (isset(self::$routeData['slug'])) {
+            $slug = self::$routeData['slug'];
+        }
+        $slug = self::createSlug(str_slug($slug), $item);
 
         $route = $item->route ? $item->route : new DynamicRoute();
 
-        $route->uses      = self::routeNameToUses();
-        $route->parameter = $item->id;
         $route->slug      = $slug;
-
-        if (isset($item->seo_title)) {
-            $route->title = $item->seo_title;
+        $route->uses      = (new self)->routeNameToUses();
+        $route->parameter = $item->id;
+        if (self::$routeData) {
+            $route->fill(self::$routeData);
         }
+        $route->save();
 
-        if (isset($item->seo_desc)) {
-            $route->description = $item->seo_desc;
-        }
-
-        if (isset($item->seo_keywords)) {
-            $route->keywords = $item->seo_keywords;
-        }
-
-        try {
-            $route->save();
-        } catch (\Exception $e) {
-            return false;
-        }
-
-        return $route;
+        return true;
     }
 
+    /**
+     * Create Slug
+     *
+     * @param $tmpSlug
+     * @param $item
+     * @param  int  $add
+     *
+     * @return string
+     */
     public static function createSlug($tmpSlug, $item, $add = 0)
     {
-        $id         = $item->$item->getKeyName();
+        $idField    = $item->getKeyName();
+        $id         = $item->$idField;
         $searchSlug = $tmpSlug;
 
         #Prefix
@@ -89,13 +121,16 @@ trait Routable
             ->exists();
 
         if ($route) {
-            return self::createSlug($tmpSlug, $item, $add++);
+            return self::createSlug($tmpSlug, $item, $add + 1);
         }
 
         return $searchSlug;
 
     }
 
+    /**
+     * @return |null
+     */
     private function routeNameToUses()
     {
         $routes = collect(Route::getRoutes());

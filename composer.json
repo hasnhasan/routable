@@ -23,7 +23,5 @@
         "HasnHasan\\Routable\\RoutableServiceProvider"
       ]
     }
-  },
-  "minimum-stability": "dev",
-  "prefer-stable": true
+  }
 }
