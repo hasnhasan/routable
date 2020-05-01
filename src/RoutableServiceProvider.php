@@ -22,7 +22,6 @@ class RoutableServiceProvider extends ServiceProvider
             __DIR__.'/config/'.$this->configFileName.'.php', $this->configFileName
         );
 
-        
     }
 
     /**
@@ -37,8 +36,15 @@ class RoutableServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/config/'.$this->configFileName.'.php' => config_path($this->configFileName.'.php'),
         ]);
-        
+
         // Migration File
         $this->loadMigrationsFrom(__DIR__.'/migrations');
+
+        // Route File
+        $routeFile = base_path('routes/routable.php');
+        if (!file_exists($routeFile)) {
+            $routeFile = __DIR__.'/routes.php';
+        }
+        $this->loadRoutesFrom($routeFile);
     }
 }

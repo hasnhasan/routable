@@ -2,9 +2,6 @@
 
 namespace HasnHasan\Routable\Traits;
 
-use HasnHasan\Routable\Models\DynamicRoute;
-use Illuminate\Support\Facades\Route;
-
 trait Routable
 {
 
@@ -44,8 +41,8 @@ trait Routable
      */
     public function route()
     {
-        return $this->hasOne(DynamicRoute::class, 'parameter', 'id')
-            ->where('uses', self::routeNameToUses());
+        return $this->hasOne(config('routable.routableModel'), 'parameter', 'id')
+            ->where('uses', self::getRouteName());
     }
 
     /**
@@ -70,17 +67,19 @@ trait Routable
      */
     public static function routeSave($item)
     {
-        $colum = isset($item->slugColumn) ? $item->slugColumn : 'title';
+        $colum = isset($item->slugColumn) ? $item->slugColumn : config('routable.defaultSlugColumn');
         $slug  = $item->$colum;
         if (isset(self::$routeData['slug'])) {
             $slug = self::$routeData['slug'];
         }
-        $slug = self::createSlug(str_slug($slug), $item);
 
-        $route = $item->route ? $item->route : new DynamicRoute();
+        $slug = self::createSlug(str_slug($slug, config('routable.separator'), config('routable.language')), $item);
+
+        $routableModel = config('routable.routableModel');
+        $route         = $item->route ? $item->route : new $routableModel();
 
         $route->slug      = $slug;
-        $route->uses      = (new self)->routeNameToUses();
+        $route->uses      = (new self)->getRouteName();
         $route->parameter = $item->id;
         if (self::$routeData) {
             $route->fill(self::$routeData);
@@ -113,8 +112,8 @@ trait Routable
         if ($add > 0) {
             $searchSlug .= '-'.$add;
         }
-
-        $route = DynamicRoute::where('slug', $searchSlug)
+        $routableModel = config('routable.routableModel');
+        $route         = $routableModel::where('slug', $searchSlug)
             ->when($id, function ($q, $id) {
                 return $q->where('parameter', '<>', $id);
             })
@@ -129,16 +128,10 @@ trait Routable
     }
 
     /**
-     * @return |null
+     * @return mixed
      */
-    private function routeNameToUses()
+    public function getRouteName()
     {
-        $routes = collect(Route::getRoutes());
-        $route  = $routes->where('action.as', $this->routeName)->first();
-        if ($route) {
-            return $route->action['uses'];
-        }
-
-        return null;
+        return $this->routeName;
     }
 }
