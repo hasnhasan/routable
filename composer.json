@@ -1,0 +1,27 @@
+{
+  "name": "hasnhasan/routable",
+  "description": "Elequent Model Routable",
+  "homepage": "https://github.com/hasnhasan/routable",
+  "keywords": ["laravel","slug","routable","dynamic-routes"],
+  "authors": [
+    {
+      "name": "Hasan Özsezgin",
+      "email": "hasan.ozsezgin@gmail.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "HasnHasan\\Routable\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "HasnHasan\\Routable\\RoutableServiceProvider"
+      ]
+    }
+  }
+}
