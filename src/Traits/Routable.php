@@ -136,4 +136,9 @@ trait Routable
     {
         return $this->routeName;
     }
+
+    public function getUrlAttribute()
+    {
+        return url($this->route->slug);
+    }
 }
