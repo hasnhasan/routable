@@ -13,4 +13,8 @@ class DynamicRoute extends Model
     ];
     protected $guarded = ['id', 'created_at', 'updated_at'];
 
+    public function routable()
+    {
+        return $this->morphTo();
+    }
 }

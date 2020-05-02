@@ -9,10 +9,11 @@ trait Routable
      * @var array
      */
     private static $routeData = [];
+    private static $routableType = null;
 
     protected static function bootRoutable()
     {
-
+        self::$routableType = get_called_class();
         self::saving(function ($item) {
             if (isset($item->_route)) {
                 self::$routeData = $item->_route;
@@ -41,7 +42,7 @@ trait Routable
      */
     public function route()
     {
-        return $this->hasOne(config('routable.routableModel'), 'parameter', 'id')
+        return $this->hasOne(config('routable.routableModel'), 'routable_id', 'id')
             ->where('uses', self::getRouteName());
     }
 
@@ -78,9 +79,10 @@ trait Routable
         $routableModel = config('routable.routableModel');
         $route         = $item->route ? $item->route : new $routableModel();
 
-        $route->slug      = $slug;
-        $route->uses      = (new self)->getRouteName();
-        $route->parameter = $item->id;
+        $route->slug          = $slug;
+        $route->uses          = (new self)->getRouteName();
+        $route->routable_id   = $item->id;
+        $route->routable_type = self::$routableType;
         if (self::$routeData) {
             $route->fill(self::$routeData);
         }
@@ -115,7 +117,7 @@ trait Routable
         $routableModel = config('routable.routableModel');
         $route         = $routableModel::where('slug', $searchSlug)
             ->when($id, function ($q, $id) {
-                return $q->where('parameter', '<>', $id);
+                return $q->where('routable_id', '<>', $id);
             })
             ->exists();
 
