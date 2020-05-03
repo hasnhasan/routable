@@ -87,6 +87,7 @@ trait Routable
             $route->fill(self::$routeData);
         }
         $route->save();
+        $route->routable_type::flushEventListeners();
 
         return true;
     }
