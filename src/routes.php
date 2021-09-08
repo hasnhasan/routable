@@ -27,14 +27,16 @@ Route::bind('route', function ($value, $route) use ($routableModel) {
     return $route->routable;
 });
 
-if ($routeData = $routableModel::where('slug', Request::path())->first()) {
+$parse = explode('/', Request::path());
+
+if ($routeData = $routableModel::where('slug', end($parse))->first()) {
     $middleware = (array) config('routable.middleware');
     $action     = $routeData->uses;
     if (!strstr($action, '/')) {
         $action = 'App\Http\Controllers\\'.$action;
     }
-
-    Route::middleware($middleware)->get("{$routeData->slug}", $action)->setDefaults([
+    $prefix = (new $routeData->routable_type)->slugPrefix;
+    Route::middleware($middleware)->get("{$prefix}/{$routeData->slug}", $action)->setDefaults([
         'routable' => $routeData->routable,
         'route'    => $routeData,
     ]);
