@@ -140,6 +140,6 @@ trait Routable
 
     public function getUrlAttribute()
     {
-        return url($this->route->slug);
+        return url($this->slugPrefix.'/'.$this->route->slug);
     }
 }
